@@ -1,6 +1,8 @@
 # Environment and secrets
 .env
 *.env
+.env.*
+!.env.example
 
 # Python virtual environment
 venv/
@@ -14,8 +16,21 @@ __pycache__/
 *$py.class
 *.so
 
+# Test & coverage caches
+.pytest_cache/
+.coverage
+htmlcov/
+
 # IDEs & System files
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Database and persistent data files
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+

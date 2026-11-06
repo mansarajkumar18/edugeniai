@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Marked.js for rendering markdown in explanations & learning paths -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- DOMPurify to sanitize markdown and prevent XSS injection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
     <!-- CSS stylesheet -->
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -33,54 +35,189 @@
             <p class="subtitle">Your personal AI tutor for instant explanations, quizzes, summaries, & structured learning paths!</p>
             
             <!-- Quick Navigation Tabs -->
-            <nav class="nav-tabs">
-                <button class="tab-btn active" data-target="section-qa">
-                    <i class="fa-solid fa-comments"></i> Ask Q&A
+            <nav class="nav-tabs" role="tablist" aria-label="Learning tools navigation">
+                <button class="tab-btn active" id="tabQa" data-target="section-qa" role="tab" aria-selected="true" aria-controls="section-qa">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI Chat & Q&A
                 </button>
-                <button class="tab-btn" data-target="section-explain">
+                <button class="tab-btn" id="tabExplain" data-target="section-explain" role="tab" aria-selected="false" aria-controls="section-explain">
                     <i class="fa-solid fa-lightbulb"></i> Explain Concept
                 </button>
-                <button class="tab-btn" data-target="section-summarize">
+                <button class="tab-btn" id="tabSummarize" data-target="section-summarize" role="tab" aria-selected="false" aria-controls="section-summarize">
                     <i class="fa-solid fa-compress-alt"></i> Summarize Text
                 </button>
-                <button class="tab-btn" data-target="section-quiz">
+                <button class="tab-btn" id="tabQuiz" data-target="section-quiz" role="tab" aria-selected="false" aria-controls="section-quiz">
                     <i class="fa-solid fa-circle-question"></i> Generate Quiz
                 </button>
-                <button class="tab-btn" data-target="section-learn">
+                <button class="tab-btn" id="tabLearn" data-target="section-learn" role="tab" aria-selected="false" aria-controls="section-learn">
                     <i class="fa-solid fa-route"></i> Learning Path
+                </button>
+                <button class="tab-btn" id="tabDashboard" data-target="section-dashboard" role="tab" aria-selected="false" aria-controls="section-dashboard">
+                    <i class="fa-solid fa-chart-line"></i> Dashboard
                 </button>
             </nav>
         </header>
 
+
         <main class="main-content">
-            <!-- 1. Q&A Section -->
-            <section id="section-qa" class="feature-card active-card">
-                <div class="card-header">
-                    <h2><i class="fa-solid fa-comments icon-qa"></i> Ask EduGenie a Question</h2>
-                    <p>Ask any academic or general knowledge question to get a concise, accurate AI answer.</p>
+            <!-- 1. Universal AI Tutor Chat Section -->
+            <section id="section-qa" class="feature-card active-card chat-card-layout" role="tabpanel" aria-labelledby="tabQa">
+                <div class="chat-header-bar">
+                    <div class="chat-title-group">
+                        <h2><i class="fa-solid fa-wand-magic-sparkles icon-qa"></i> EduGenie AI Learning Companion</h2>
+                        <p>Ask anything across subjects, follow up naturally, or request simpler explanations.</p>
+                    </div>
+                    <div class="chat-header-actions">
+                        <span id="chatConnectionBadge" class="chat-status-badge">
+                            <span class="status-dot"></span> Live AI
+                        </span>
+                        <button type="button" id="chatNewSessionBtn" class="chat-action-btn-primary" title="Start a fresh conversation">
+                            <i class="fa-solid fa-plus"></i> New Chat
+                        </button>
+                    </div>
                 </div>
-                <form id="qaForm" class="feature-form">
-                    <div class="input-group">
-                        <label for="question"><strong>Ask EduGenie a Question:</strong></label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-magnifying-glass input-icon"></i>
-                            <input type="text" id="question" name="question" placeholder="Which is the largest ocean?" required autocomplete="off">
-                            <button type="submit" class="submit-btn">
-                                <span>Get Answer</span> <i class="fa-solid fa-paper-plane"></i>
-                            </button>
+
+                <!-- Quick Student Preferences Bar -->
+                <div class="chat-prefs-bar" id="chatPrefsBar">
+                    <div class="pref-item">
+                        <label for="qaGradeLevel"><i class="fa-solid fa-graduation-cap"></i> Class / Grade:</label>
+                        <select id="qaGradeLevel" name="qaGradeLevel" class="pref-select">
+                            <option value="">Auto (Any Grade)</option>
+                            <option value="primary">Primary (Grades 1-5)</option>
+                            <option value="middle">Middle (Grades 6-8)</option>
+                            <option value="high_school">High School (Grades 9-10)</option>
+                            <option value="higher_secondary">Higher Secondary (11-12)</option>
+                            <option value="college">College / University</option>
+                        </select>
+                    </div>
+                    <div class="pref-item">
+                        <label for="qaSubject"><i class="fa-solid fa-book-open"></i> Subject:</label>
+                        <select id="qaSubject" name="qaSubject" class="pref-select">
+                            <option value="">All Subjects</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Science">Science (Physics, Chem, Bio)</option>
+                            <option value="Computer Science">Computer Science & Coding</option>
+                            <option value="English">English & Writing</option>
+                            <option value="Social Science">Social Science & History</option>
+                            <option value="General">General Knowledge</option>
+                        </select>
+                    </div>
+                    <div class="pref-item">
+                        <label for="qaLanguage"><i class="fa-solid fa-language"></i> Language:</label>
+                        <select id="qaLanguage" name="qaLanguage" class="pref-select">
+                            <option value="english">English</option>
+                            <option value="tamil">Tamil (தமிழ்)</option>
+                            <option value="tanglish">Tanglish (Tamil in English)</option>
+                        </select>
+                    </div>
+                    <div class="pref-item">
+                        <label for="qaDifficulty"><i class="fa-solid fa-sliders"></i> Explanation Style:</label>
+                        <select id="qaDifficulty" name="qaDifficulty" class="pref-select">
+                            <option value="standard">Standard Style</option>
+                            <option value="beginner">Simple (Intuitive)</option>
+                            <option value="intermediate">Step-by-Step</option>
+                            <option value="advanced">Detailed & Deep</option>
+                        </select>
+                    </div>
+                    <div class="pref-item">
+                        <label for="qaResponseLength"><i class="fa-solid fa-ruler-horizontal"></i> Answer Length:</label>
+                        <select id="qaResponseLength" name="qaResponseLength" class="pref-select">
+                            <option value="short" selected>Short (2–5 sentences)</option>
+                            <option value="normal">Normal (Balanced)</option>
+                            <option value="detailed">Detailed (Full explanation)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Chat Message Stream -->
+                <div id="chatMessageStream" class="chat-message-stream" role="log" aria-live="polite" aria-label="AI Tutor Conversation">
+                    <!-- Welcome Initial Screen -->
+                    <div class="chat-welcome-card" id="chatWelcomeCard">
+                        <div class="welcome-avatar">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <h3>Hello! I'm EduGenie 🧠✨</h3>
+                        <p>Your universal AI learning companion. Ask me any homework question, concept explanation, math problem, coding challenge, or revision question!</p>
+                        <div class="suggestion-chips-container">
+                            <span class="chips-title"><i class="fa-solid fa-lightbulb"></i> Try asking:</span>
+                            <div class="suggestion-chips">
+                                <button type="button" class="chip-btn" data-query="Explain photosynthesis with an everyday analogy">🌱 Explain photosynthesis with an analogy</button>
+                                <button type="button" class="chip-btn" data-query="Solve step-by-step: 3x + 12 = 27">📐 Solve step-by-step: 3x + 12 = 27</button>
+                                <button type="button" class="chip-btn" data-query="Python for loop vs while loop with examples">🐍 Python for loop vs while loop</button>
+                                <button type="button" class="chip-btn" data-query="Explain Newton's third law of motion in Tamil">🚀 Newton's laws in Tamil</button>
+                                <button type="button" class="chip-btn" data-query="Give me 5 study revision tips for math exams">📝 Revision tips for exams</button>
+                            </div>
                         </div>
                     </div>
+                    <!-- Conversation Messages will be appended here dynamically -->
+                    <div id="chatMessagesList" class="chat-messages-list"></div>
+                    <!-- Typing / Thinking Indicator -->
+                    <div id="chatThinkingIndicator" class="chat-thinking hidden" aria-hidden="true">
+                        <div class="chat-avatar tutor-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <div class="thinking-bubble">
+                            <div class="typing-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <span class="thinking-text">EduGenie is thinking...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input Form -->
+                <form id="qaForm" class="chat-input-form" onsubmit="return false;">
+                    <div class="chat-input-wrapper">
+                        <textarea
+                            id="question"
+                            name="question"
+                            rows="1"
+                            placeholder="Ask any question, request a simpler explanation, or follow up... (Shift + Enter for new line)"
+                            required
+                            autocomplete="off"
+                            aria-label="Ask EduGenie a question"
+                        ></textarea>
+                        <button type="submit" id="qaSubmitBtn" class="chat-send-btn" title="Send message (Enter)">
+                            <span>Send</span>
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="chat-input-footer">
+                        <span class="shortcut-hint"><i class="fa-regular fa-keyboard"></i> Press <strong>Enter</strong> to send &bull; <strong>Shift + Enter</strong> for a new line</span>
+                        <span id="charCounter" class="char-counter">0 / 5000</span>
+                    </div>
                 </form>
-                <div id="qaResult" class="output hidden"></div>
+
+                <!-- Hidden legacy anchor for backwards compatibility -->
+                <div id="qaResult" class="output hidden" style="display:none;"></div>
             </section>
 
             <!-- 2. Concept Explanation Section -->
-            <section id="section-explain" class="feature-card">
+            <section id="section-explain" class="feature-card" role="tabpanel" aria-labelledby="tabExplain">
                 <div class="card-header">
                     <h2><i class="fa-solid fa-lightbulb icon-explain"></i> Need an Explanation?</h2>
-                    <p>Break down complex topics into simple, beginner-friendly explanations.</p>
+                    <p>Break down complex topics into clear, adaptive explanations suited to your learning style.</p>
                 </div>
                 <form id="explainForm" class="feature-form">
+                    <div class="filter-row">
+                        <div class="filter-item">
+                            <label for="explainLevel"><i class="fa-solid fa-layer-group"></i> Explanation Level:</label>
+                            <select id="explainLevel" name="explainLevel" class="filter-select">
+                                <option value="">Standard Level</option>
+                                <option value="beginner">Beginner (Plain language, zero jargon)</option>
+                                <option value="intermediate">Intermediate (Mechanisms & details)</option>
+                                <option value="advanced">Advanced (Technical rigor & edge cases)</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="explainStyle"><i class="fa-solid fa-palette"></i> Learning Style:</label>
+                            <select id="explainStyle" name="explainStyle" class="filter-select">
+                                <option value="">Standard Style</option>
+                                <option value="simple explanation">Simple Explanation (Concise)</option>
+                                <option value="step-by-step explanation">Step-by-Step Breakdown</option>
+                                <option value="real-world example">Real-World Example</option>
+                                <option value="analogy-based explanation">Analogy-Based Explanation</option>
+                                <option value="exam-oriented explanation">Exam-Oriented Revision</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="input-group">
                         <label for="topic"><strong>Need an Explanation?</strong></label>
                         <div class="input-wrapper">
@@ -96,19 +233,57 @@
             </section>
 
             <!-- 3. Summarization Section -->
-            <section id="section-summarize" class="feature-card">
+            <section id="section-summarize" class="feature-card" role="tabpanel" aria-labelledby="tabSummarize">
                 <div class="card-header">
-                    <h2><i class="fa-solid fa-file-lines icon-summarize"></i> Summarize a Paragraph</h2>
-                    <p>Condense lengthy passages into clear, concise key points for quick revision.</p>
+                    <h2><i class="fa-solid fa-file-lines icon-summarize"></i> Smart Summarizer & Revision Notes</h2>
+                    <p>Condense passages, extract key concepts, or generate exam revision notes grounded strictly in your study material.</p>
                 </div>
                 <form id="summaryForm" class="feature-form">
+                    <div class="filter-row">
+                        <div class="filter-item">
+                            <label for="summaryFormat"><i class="fa-solid fa-layer-group"></i> Summary Format:</label>
+                            <select id="summaryFormat" name="summaryFormat" class="filter-select">
+                                <option value="short">Short Summary (Quick overview)</option>
+                                <option value="detailed">Detailed Summary (Comprehensive)</option>
+                                <option value="revision_notes">Exam Revision Notes (High-yield)</option>
+                                <option value="key_concepts">Key Concepts & Definitions</option>
+                                <option value="important_points">Important Points (Bulleted)</option>
+                                <option value="step_by_step">Step-by-Step Breakdown</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="summaryLength"><i class="fa-solid fa-sliders"></i> Desired Length:</label>
+                            <select id="summaryLength" name="summaryLength" class="filter-select">
+                                <option value="short">Short (~100-200 words)</option>
+                                <option value="medium" selected>Medium (~250-400 words)</option>
+                                <option value="detailed">Detailed (~500+ words)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group optional-topic-group">
+                        <label for="summaryTopic"><i class="fa-solid fa-crosshairs"></i> Focus Topic within Passage (Optional):</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                            <input type="text" id="summaryTopic" name="summaryTopic" placeholder="e.g. Steam engine impact, Causes of war..." autocomplete="off">
+                        </div>
+                    </div>
                     <div class="input-group">
-                        <label for="summaryText"><strong>Summarize a Paragraph:</strong></label>
-                        <textarea id="summaryText" name="summaryText" rows="4" placeholder="Paste long educational passage to summarize..." required></textarea>
+                        <label for="summaryText"><strong>Source Material to Summarize:</strong></label>
+                        <textarea id="summaryText" name="summaryText" rows="5" placeholder="Paste educational passage, chapter excerpt, or study notes..." required></textarea>
+                    </div>
+                    <div class="checkbox-row" id="revisionOptionsRow">
+                        <label class="custom-checkbox-label">
+                            <input type="checkbox" id="includeChecklist" checked>
+                            <span><i class="fa-solid fa-list-check"></i> Include Topic Revision Checklist</span>
+                        </label>
+                        <label class="custom-checkbox-label">
+                            <input type="checkbox" id="includePracticeQuestions">
+                            <span><i class="fa-solid fa-circle-question"></i> Include Quick Practice Questions</span>
+                        </label>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="submit-btn summarize-btn">
-                            <span>Summarize</span> <i class="fa-solid fa-bolt"></i>
+                            <span>Generate Summary</span> <i class="fa-solid fa-bolt"></i>
                         </button>
                     </div>
                 </form>
@@ -116,7 +291,7 @@
             </section>
 
             <!-- 4. Quiz Generation Section -->
-            <section id="section-quiz" class="feature-card">
+            <section id="section-quiz" class="feature-card" role="tabpanel" aria-labelledby="tabQuiz">
                 <div class="card-header">
                     <h2><i class="fa-solid fa-circle-question icon-quiz"></i> Generate a Quiz</h2>
                     <p>Test your knowledge with 3 interactive multiple-choice questions generated from your topic or passage.</p>
@@ -136,27 +311,255 @@
                 <div id="quizResult" class="output hidden"></div>
             </section>
 
-            <!-- 5. Learning Path Recommendations Section -->
-            <section id="section-learn" class="feature-card">
+            <!-- 5. Adaptive Learning & Study Plan Section -->
+            <section id="section-learn" class="feature-card" role="tabpanel" aria-labelledby="tabLearn">
                 <div class="card-header">
-                    <h2><i class="fa-solid fa-route icon-learn"></i> Get Learning Recommendations</h2>
-                    <p>Receive a structured step-by-step roadmap from beginner to advanced levels with recommended resources.</p>
+                    <h2><i class="fa-solid fa-route icon-learn"></i> Adaptive Learning & Study Planning</h2>
+                    <p>Receive tailored learning roadmaps, quiz-based feedback, or realistic study plans designed around your schedule.</p>
                 </div>
-                <form id="learnForm" class="feature-form">
-                    <div class="input-group">
-                        <label for="learnTopic"><strong>Get Learning Recommendations:</strong></label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-compass input-icon"></i>
-                            <input type="text" id="learnTopic" name="learnTopic" placeholder="SQL" required autocomplete="off">
-                            <button type="submit" class="submit-btn learn-btn">
-                                <span>Get Recommendations</span> <i class="fa-solid fa-chart-line"></i>
+
+                <!-- Sub-Mode Switcher -->
+                <div class="sub-mode-tabs">
+                    <button type="button" class="sub-tab-btn active" id="tabModeRoadmap" data-mode="roadmap">
+                        <i class="fa-solid fa-route"></i> Adaptive Learning Path
+                    </button>
+                    <button type="button" class="sub-tab-btn" id="tabModePlan" data-mode="plan">
+                        <i class="fa-solid fa-calendar-check"></i> Personalized Study Plan
+                    </button>
+                </div>
+
+                <!-- Mode 1: Adaptive Learning Recommendations Form -->
+                <div id="subContainerRoadmap" class="sub-mode-content active-sub-mode">
+                    <!-- Dynamic Banner when Quiz Results Are Available -->
+                    <div id="quizSessionBanner" class="quiz-session-banner hidden">
+                        <div class="banner-info">
+                            <i class="fa-solid fa-graduation-cap banner-icon"></i>
+                            <span id="quizSessionText">Recent Quiz Session Available</span>
+                        </div>
+                        <label class="custom-checkbox-label">
+                            <input type="checkbox" id="useQuizSessionCheck" checked>
+                            <span>Adapt recommendations using my quiz answers</span>
+                        </label>
+                    </div>
+
+                    <form id="learnForm" class="feature-form">
+                        <div class="filter-row">
+                            <div class="filter-item">
+                                <label for="learnSubject"><i class="fa-solid fa-book-open"></i> Subject (Optional):</label>
+                                <select id="learnSubject" name="learnSubject" class="filter-select">
+                                    <option value="">All Academic Subjects</option>
+                                    <option value="Computer Science">Computer Science & Programming</option>
+                                    <option value="Mathematics">Mathematics</option>
+                                    <option value="Science">Science (Physics, Chemistry, Biology)</option>
+                                    <option value="Humanities">Humanities & Social Studies</option>
+                                    <option value="General">General Academic</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label for="learnDifficulty"><i class="fa-solid fa-sliders"></i> Target Level:</label>
+                                <select id="learnDifficulty" name="learnDifficulty" class="filter-select">
+                                    <option value="">Standard Multi-Tier (Beginner to Advanced)</option>
+                                    <option value="beginner">Beginner (Foundations & Prerequisites)</option>
+                                    <option value="intermediate">Intermediate (Core Applications)</option>
+                                    <option value="advanced">Advanced (Deep Dive & Mastery)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="learnTopic"><strong>Topic or Skill to Learn:</strong></label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-compass input-icon"></i>
+                                <input type="text" id="learnTopic" name="learnTopic" placeholder="SQL" required autocomplete="off">
+                                <button type="submit" class="submit-btn learn-btn">
+                                    <span>Get Recommendations</span> <i class="fa-solid fa-chart-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="input-group optional-goals-group">
+                            <label for="learnGoals"><i class="fa-solid fa-bullseye"></i> Specific Learning Focus / Goal (Optional):</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-pen-to-square input-icon"></i>
+                                <input type="text" id="learnGoals" name="learnGoals" placeholder="e.g. Master JOINs and subqueries for data analysis" autocomplete="off">
+                            </div>
+                        </div>
+                    </form>
+                    <div id="learnResult" class="output hidden"></div>
+                </div>
+
+                <!-- Mode 2: Personalized Study Plan Form -->
+                <div id="subContainerPlan" class="sub-mode-content">
+                    <form id="studyPlanForm" class="feature-form">
+                        <div class="filter-row">
+                            <div class="filter-item">
+                                <label for="planSubject"><i class="fa-solid fa-book-open"></i> Subject Area (Optional):</label>
+                                <select id="planSubject" name="planSubject" class="filter-select">
+                                    <option value="">General Academic</option>
+                                    <option value="Computer Science">Computer Science & Coding</option>
+                                    <option value="Mathematics">Mathematics</option>
+                                    <option value="Science">Natural Sciences</option>
+                                    <option value="Humanities">Humanities & History</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label for="planLevel"><i class="fa-solid fa-layer-group"></i> Current Level:</label>
+                                <select id="planLevel" name="planLevel" class="filter-select">
+                                    <option value="beginner">Beginner</option>
+                                    <option value="intermediate">Intermediate</option>
+                                    <option value="advanced">Advanced</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="planGoal"><strong>Primary Learning Goal or Target Exam:</strong></label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-bullseye input-icon"></i>
+                                <input type="text" id="planGoal" name="planGoal" placeholder="e.g. Prepare for Midterm Exam in Calculus" required autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="filter-row">
+                            <div class="filter-item">
+                                <label for="planTime"><i class="fa-solid fa-clock"></i> Available Study Time:</label>
+                                <select id="planTime" name="planTime" class="filter-select">
+                                    <option value="30 minutes / day">30 minutes / day</option>
+                                    <option value="1 hour / day" selected>1 hour / day</option>
+                                    <option value="2 hours / day">2 hours / day</option>
+                                    <option value="5 hours / week">5 hours / week</option>
+                                    <option value="Weekend sprint (8 hours)">Weekend sprint (8 hours)</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label for="planTargetDate"><i class="fa-solid fa-calendar-days"></i> Target Timeframe (Optional):</label>
+                                <div class="input-wrapper">
+                                    <i class="fa-solid fa-hourglass-half input-icon"></i>
+                                    <input type="text" id="planTargetDate" name="planTargetDate" placeholder="e.g. In 2 weeks, By end of month" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="submit-btn plan-btn">
+                                <span>Generate Study Plan</span> <i class="fa-solid fa-calendar-plus"></i>
                             </button>
                         </div>
+                    </form>
+                    <div id="studyPlanResult" class="output hidden"></div>
+                </div>
+            </section>
+
+            <!-- 6. Student Progress & Learning Dashboard Section -->
+            <section id="section-dashboard" class="feature-card" role="tabpanel" aria-labelledby="tabDashboard">
+                <div class="card-header dashboard-header">
+                    <div>
+                        <h2><i class="fa-solid fa-chart-line icon-dashboard"></i> Student Learning Dashboard</h2>
+                        <p>Track your verified learning activity, quiz performance, active study plans, and personalized revision focus.</p>
                     </div>
-                </form>
-                <div id="learnResult" class="output hidden"></div>
+                    <div class="dashboard-actions">
+                        <button type="button" id="btnRefreshDashboard" class="dashboard-action-btn" title="Refresh metrics">
+                            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                        </button>
+                        <button type="button" id="btnResetDashboard" class="dashboard-action-btn reset-btn" title="Reset local workspace progress">
+                            <i class="fa-solid fa-trash-can"></i> Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Workspace Identity & Privacy Notice -->
+                <div class="workspace-mode-banner">
+                    <div class="workspace-info">
+                        <i class="fa-solid fa-laptop-code workspace-icon"></i>
+                        <div>
+                            <strong>Local Student Workspace</strong> &bull; <span class="badge-tag">Prototype Mode</span>
+                            <div class="workspace-desc">Progress data is persisted locally in SQLite. Multi-user cloud account isolation and secure authentication are planned for a future release.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metric Cards Row -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon metric-quizzes"><i class="fa-solid fa-clipboard-question"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-value" id="metricTotalQuizzes">0</span>
+                            <span class="metric-label">Quizzes Taken</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon metric-avg"><i class="fa-solid fa-chart-pie"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-value" id="metricAvgScore">0%</span>
+                            <span class="metric-label">Average Score</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon metric-best"><i class="fa-solid fa-trophy"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-value" id="metricBestScore">0%</span>
+                            <span class="metric-label">Best Score</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon metric-topics"><i class="fa-solid fa-graduation-cap"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-value" id="metricTopicsCount">0</span>
+                            <span class="metric-label">Topics Studied</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Content Grid -->
+                <div class="dashboard-grid">
+                    <!-- Left Column: Quiz History & Active Study Plans -->
+                    <div class="dashboard-column">
+                        <!-- Recent Quiz Attempts -->
+                        <div class="dashboard-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Quiz History</h3>
+                                <span class="panel-subtitle">Trusted backend evaluations</span>
+                            </div>
+                            <div id="dashboardQuizList" class="panel-content">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Active Study Plans -->
+                        <div class="dashboard-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-calendar-check"></i> Active Study Plans</h3>
+                                <span class="panel-subtitle">Session progress</span>
+                            </div>
+                            <div id="dashboardStudyPlanList" class="panel-content">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Targeted Practice & Learning Activities -->
+                    <div class="dashboard-column">
+                        <!-- Recommended Revision & Next Steps -->
+                        <div class="dashboard-panel highlight-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-bullseye"></i> Recommended Practice & Next Steps</h3>
+                                <span class="panel-subtitle">Adaptive suggestions</span>
+                            </div>
+                            <div id="dashboardRecommendationsList" class="panel-content">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Recent Learning Activity Log -->
+                        <div class="dashboard-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-list-check"></i> Learning Activity Log</h3>
+                                <span class="panel-subtitle">Verified study events</span>
+                            </div>
+                            <div id="dashboardActivityList" class="panel-content">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
         </main>
+
 
         <footer class="main-footer">
             <p>EduGenie &copy; 2026 SmartBridge / SmartInternz Educational Platform &bull; Built with FastAPI & Google Gemini AI</p>
